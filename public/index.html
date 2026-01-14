@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Incident Reproduction Lab</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 900px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      padding: 30px;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 8px;
+      font-size: 24px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 24px;
+      font-size: 14px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      color: #555;
+      margin-bottom: 6px;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e1e1e1;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .message {
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-top: 16px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .message.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+      display: block;
+    }
+
+    .message.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+      display: block;
+    }
+
+    .debug-panel h2 {
+      color: #333;
+      margin-bottom: 16px;
+      font-size: 18px;
+    }
+
+    .debug-section {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .debug-section h3 {
+      color: #555;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .debug-content {
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 12px;
+      color: #333;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .test-users {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+    }
+
+    .test-users h3 {
+      color: #555;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    .user-chip {
+      display: inline-block;
+      background: #e9ecef;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      margin: 4px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .user-chip:hover {
+      background: #dee2e6;
+    }
+
+    .user-chip.buggy {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+    }
+
+    .status-indicator {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+
+    .status-indicator.success { background: #28a745; }
+    .status-indicator.error { background: #dc3545; }
+    .status-indicator.pending { background: #ffc107; }
+
+    .network-log {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .log-entry {
+      padding: 8px;
+      border-bottom: 1px solid #eee;
+      font-size: 11px;
+    }
+
+    .log-entry:last-child {
+      border-bottom: none;
+    }
+
+    .log-entry .method {
+      font-weight: bold;
+      color: #667eea;
+    }
+
+    .log-entry .status {
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: bold;
+    }
+
+    .log-entry .status.s200 { background: #d4edda; color: #155724; }
+    .log-entry .status.s400 { background: #fff3cd; color: #856404; }
+    .log-entry .status.s401 { background: #f8d7da; color: #721c24; }
+    .log-entry .status.s429 { background: #f8d7da; color: #721c24; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Login Form -->
+    <div class="card">
+      <h1>Login</h1>
+      <p class="subtitle">Incident Reproduction Lab - Demo Login Form</p>
+
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" placeholder="Enter your username" autocomplete="off">
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" placeholder="Enter your password">
+        </div>
+
+        <button type="submit" id="submitBtn">Sign In</button>
+      </form>
+
+      <div id="message" class="message"></div>
+
+      <div class="test-users">
+        <h3>Quick Test Users (click to fill)</h3>
+        <span class="user-chip" data-user="alice" data-pass="password123">alice (works)</span>
+        <span class="user-chip" data-user="bob" data-pass="securepass">bob (works)</span>
+        <span class="user-chip buggy" data-user="charlie" data-pass="charlie456">charlie (BUG!)</span>
+        <span class="user-chip buggy" data-user="david" data-pass="david789">david (BUG!)</span>
+        <span class="user-chip buggy" data-user="emma" data-pass="emma321">emma (BUG!)</span>
+      </div>
+    </div>
+
+    <!-- Debug Panel -->
+    <div class="card debug-panel">
+      <h2>Debug Panel</h2>
+
+      <div class="debug-section">
+        <h3>Last Request</h3>
+        <div class="debug-content" id="requestDebug">No requests yet</div>
+      </div>
+
+      <div class="debug-section">
+        <h3>Last Response</h3>
+        <div class="debug-content" id="responseDebug">No responses yet</div>
+      </div>
+
+      <div class="debug-section">
+        <h3>Network Log</h3>
+        <div class="network-log" id="networkLog">
+          <div class="log-entry" style="color: #666;">Waiting for requests...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('loginForm');
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const submitBtn = document.getElementById('submitBtn');
+    const messageDiv = document.getElementById('message');
+    const requestDebug = document.getElementById('requestDebug');
+    const responseDebug = document.getElementById('responseDebug');
+    const networkLog = document.getElementById('networkLog');
+
+    let requestCount = 0;
+
+    // Quick fill user chips
+    document.querySelectorAll('.user-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        usernameInput.value = chip.dataset.user;
+        passwordInput.value = chip.dataset.pass;
+      });
+    });
+
+    function addNetworkLogEntry(method, url, status, duration) {
+      requestCount++;
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+
+      let statusClass = 's' + status;
+      entry.innerHTML = `
+        <span class="status-indicator ${status === 200 ? 'success' : 'error'}"></span>
+        <span class="method">${method}</span> ${url}
+        <span class="status ${statusClass}">${status}</span>
+        <span style="color: #999; float: right;">${duration}ms</span>
+      `;
+
+      // Remove "waiting" message
+      if (requestCount === 1) {
+        networkLog.innerHTML = '';
+      }
+
+      networkLog.insertBefore(entry, networkLog.firstChild);
+    }
+
+    function showMessage(type, text) {
+      messageDiv.className = `message ${type}`;
+      messageDiv.textContent = text;
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const username = usernameInput.value;
+      const password = passwordInput.value;
+
+      const requestBody = { username, password };
+
+      // Update debug panel
+      requestDebug.textContent = JSON.stringify({
+        method: 'POST',
+        url: '/api/login',
+        headers: { 'Content-Type': 'application/json' },
+        body: requestBody
+      }, null, 2);
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Signing in...';
+      messageDiv.className = 'message';
+
+      const startTime = Date.now();
+
+      try {
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestBody)
+        });
+
+        const duration = Date.now() - startTime;
+        const data = await response.json();
+
+        // Update debug panel
+        responseDebug.textContent = JSON.stringify({
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries()),
+          body: data
+        }, null, 2);
+
+        addNetworkLogEntry('POST', '/api/login', response.status, duration);
+
+        if (response.ok && data.success) {
+          showMessage('success', `Welcome back, ${data.user.username}! Login successful.`);
+        } else {
+          showMessage('error', `Error: ${data.error} (Code: ${data.code})`);
+        }
+      } catch (error) {
+        const duration = Date.now() - startTime;
+        responseDebug.textContent = JSON.stringify({ error: error.message }, null, 2);
+        addNetworkLogEntry('POST', '/api/login', 0, duration);
+        showMessage('error', `Network error: ${error.message}`);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Sign In';
+      }
+    });
+  </script>
+</body>
+</html>
